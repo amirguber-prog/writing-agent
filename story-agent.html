@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>סוכן הסיפורים</title>
+<style>
+/* ===== BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0c0c0f;
+  --surface:   #14141a;
+  --surface2:  #1c1c24;
+  --surface3:  #24242e;
+  --accent:    #7c6aff;
+  --accent-bg: rgba(124,106,255,0.12);
+  --danger:    #e05252;
+  --success:   #4ec87a;
+  --warn:      #f0a030;
+  --text:      #e4e4ec;
+  --text-dim:  #7878a0;
+  --border:    #2a2a3a;
+  --radius:    14px;
+}
+
+html { height: 100%; }
+body {
+  height: 100%;
+  font-family: -apple-system, 'Segoe UI', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  direction: rtl;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ===== SCREENS ===== */
+.screen { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+.screen.active { display: flex; }
+
+/* ===== SETTINGS ===== */
+#settings-screen { overflow-y: auto; padding: 0 0 40px; }
+
+.settings-hero {
+  padding: 48px 24px 32px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(124,106,255,0.08) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.settings-hero .logo {
+  font-size: 48px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.settings-hero h1 {
+  font-size: 26px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a896ff, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.settings-hero p {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.settings-body {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.field input, .field select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 13px 14px;
+  color: var(--text);
+  font-size: 15px;
+  direction: ltr;
+  text-align: left;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+
+.field input:focus, .field select:focus { border-color: var(--accent); }
+
+.field select { direction: rtl; text-align: right; }
+
+.field .hint {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.range-row input[type=range] {
+  flex: 1;
+  direction: ltr;
+  padding: 0;
+  height: 4px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.range-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 28px;
+  text-align: center;
+}
+
+.btn {
+  border: none;
+  border-radius: 12px;
+  padding: 15px 20px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  letter-spacing: -0.2px;
+}
+
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-success { background: var(--success); color: #0a1f10; }
+.btn-sm { padding: 10px 16px; font-size: 14px; border-radius: 10px; }
+
+.compat-warning {
+  background: rgba(240,160,48,0.1);
+  border: 1px solid var(--warn);
+  border-radius: var(--radius);
+  padding: 14px;
+  font-size: 13px;
+  color: #f5c060;
+  line-height: 1.6;
+  display: none;
+}
+
+/* ===== CHAT HEADER ===== */
+.chat-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 10px;
+}
+
+.header-title { font-size: 16px; font-weight: 800; }
+.header-sub { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+.state-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 80px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.state-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.state-dot.listening { background: var(--success); animation: pulse 1.2s ease-in-out infinite; }
+.state-dot.processing { background: var(--warn); animation: spin-dot 0.7s linear infinite; }
+.state-dot.speaking { background: var(--accent); animation: pulse 0.7s ease-in-out infinite; }
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.6; }
+}
+@keyframes spin-dot {
+  from { box-shadow: 0 0 0 0 var(--warn); transform: scale(1); }
+  50% { box-shadow: 0 0 0 3px rgba(240,160,48,0.2); transform: scale(1.3); }
+  to { box-shadow: 0 0 0 0 var(--warn); transform: scale(1); }
+}
+
+.icon-btn {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.icon-btn:active { filter: brightness(0.8); transform: scale(0.92); }
+
+/* ===== MESSAGES ===== */
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 14px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.msg {
+  max-width: 84%;
+  padding: 11px 15px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.65;
+  animation: msg-in 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  word-break: break-word;
+}
+
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* RTL: user = right = flex-start, agent = left = flex-end */
+.msg.user {
+  background: var(--accent-bg);
+  border: 1px solid rgba(124,106,255,0.3);
+  align-self: flex-start;
+  border-top-right-radius: 4px;
+}
+
+.msg.assistant {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  align-self: flex-end;
+  border-top-left-radius: 4px;
+}
+
+.msg.system-msg {
+  background: transparent;
+  border: none;
+  align-self: center;
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: 4px 0;
+  max-width: 100%;
+}
+
+/* Typing indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 14px 18px;
+}
+.typing-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  animation: td-bounce 1.1s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.18s; }
+.typing-dot:nth-child(3) { animation-delay: 0.36s; }
+@keyframes td-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  45% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Story card save widget */
+.story-card-widget {
+  align-self: center;
+  width: 100%;
+  max-width: 100%;
+  background: linear-gradient(135deg, rgba(78,200,122,0.08), rgba(78,200,122,0.04));
+  border: 1px solid rgba(78,200,122,0.3);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: msg-in 0.25s ease;
+}
+
+.story-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.story-card-detail {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.story-card-detail strong { color: var(--text); }
+
+.story-card-actions { display: flex; gap: 8px; }
+
+/* ===== LIVE TRANSCRIPT ===== */
+.live-area {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 8px 14px;
+  min-height: 44px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.live-area.visible { display: flex; }
+
+.mic-pulse {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--success);
+  flex-shrink: 0;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.live-text {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.live-text .final { color: var(--text); font-style: normal; }
+
+/* ===== BOTTOM BAR ===== */
+.chat-controls {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 14px 22px;
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.mic-btn {
+  flex: 1;
+  border: none;
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  letter-spacing: -0.2px;
+}
+
+.mic-btn.idle {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+
+.mic-btn.listening {
+  background: var(--success);
+  color: #061a0d;
+  animation: glow-green 2s ease-in-out infinite;
+}
+
+.mic-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@keyframes glow-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(78,200,122,0.3); }
+  50% { box-shadow: 0 0 0 10px rgba(78,200,122,0); }
+}
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(calc(-100% - 20px));
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  white-space: nowrap;
+  max-width: 88vw;
+  text-align: center;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: var(--success); color: var(--success); }
+.toast.error { border-color: var(--danger); color: var(--danger); }
+.toast.info { border-color: var(--accent); color: var(--accent); }
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═══════════════ SETTINGS SCREEN ═══════════════ -->
+  <div id="settings-screen" class="screen active">
+
+    <div class="settings-hero">
+      <span class="logo">📖</span>
+      <h1>סוכן הסיפורים</h1>
+      <p>עוזר כתיבה קולי בעברית<br>ביקורתי, ישיר, ומחדד רעיונות</p>
+    </div>
+
+    <div class="settings-body">
+
+      <div id="compat-warning" class="compat-warning">
+        ⚠️ <strong>אזהרת תאימות:</strong> זיהוי קול אינו נתמך בדפדפן זה.<br>
+        השתמש ב-<strong>Chrome על Android</strong> או <strong>Safari על iOS</strong>.
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔑 Claude API</div>
+        <div class="field">
+          <label>מפתח API</label>
+          <input type="password" id="api-key" placeholder="sk-ant-..." autocomplete="off" />
+          <span class="hint">נשמר מקומית בדפדפן בלבד, לא נשלח לשרת</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📚 שמירה ל-Notion</div>
+        <div class="field">
+          <label>Make.com Webhook URL</label>
+          <input type="url" id="webhook-url" placeholder="https://hook.eu2.make.com/..." />
+          <span class="hint">
+            אופציונלי. הגדר ב-Make.com: Webhook → Notion "Create a record"
+            עם Database ID: 3738cc67277080549cabc4b1ac8e3723
+          </span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎤 קול</div>
+        <div class="field">
+          <label>קול לקריאה</label>
+          <select id="voice-select">
+            <option value="">ברירת מחדל עברית</option>
+          </select>
+          <span class="hint">קולות עבריים יופיעו לאחר טעינה ראשונה</span>
+        </div>
+        <div class="field">
+          <label>מהירות קריאה</label>
+          <div class="range-row">
+            <input type="range" id="speech-rate" min="0.6" max="1.6" step="0.1" value="1.0" />
+            <span class="range-label" id="rate-display">1.0×</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="start-btn" onclick="startSession()">
+        🎙️ התחל שיחה
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════ CHAT SCREEN ═══════════════ -->
+  <div id="chat-screen" class="screen">
+
+    <div class="chat-header">
+      <div>
+        <div class="header-title">📖 סוכן הסיפורים</div>
+        <div class="header-sub" id="session-sub">שיחה פעילה</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="state-pill" id="state-pill">
+          <div class="state-dot" id="state-dot"></div>
+          <span id="state-label">מוכן</span>
+        </div>
+        <button class="icon-btn" onclick="saveStoryCard()" title="שמור כרטיס סיפור">💾</button>
+        <button class="icon-btn" onclick="goToSettings()" title="הגדרות">⚙️</button>
+      </div>
+    </div>
+
+    <div class="messages-container" id="messages"></div>
+
+    <div class="live-area" id="live-area">
+      <div class="mic-pulse"></div>
+      <div class="live-text" id="live-text"></div>
+    </div>
+
+    <div class="chat-controls">
+      <button class="mic-btn idle" id="mic-btn" onclick="toggleListening()">
+        <span id="mic-icon">🎙️</span>
+        <span id="mic-label">התחל להאזין</span>
+      </button>
+      <button class="icon-btn" onclick="clearConversation()" title="שיחה חדשה" style="width:46px;height:46px;font-size:18px">🗑️</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════════════ */
+
+const SYSTEM_PROMPT = `אתה סוכן ספרותי מומחה בספרות עברית מודרנית. תפקידך לעזור לכותבים לפתח רעיונות לסיפורים בשיחה קולית.
+
+אופי ועמדה:
+- ישיר וביקורתי. לא מחנף ולא מעודד סתם כך.
+- אם רעיון חלש, קלישאתי, או לא מעניין — אמור זאת בפשטות ובלי התנצלות.
+- ערער על הנחות. שאל "למה זה מעניין?" ו"מה יש כאן שאין בסיפורים אחרים?"
+- חפש את הפצע האמיתי — את מה שהכותב מנסה לומר אבל עדיין לא מצא.
+
+מה לעשות:
+- שאל שאלה אחת חדה בכל פעם — לא רשימה.
+- התמקד בדמויות, קונפליקט פנימי, ותמות — לא בעלילה שטחית.
+- דחוף לעבר עומק פסיכולוגי ואמינות רגשית.
+- כשרעיון מגיע לבשלות — הכרז על כך בפה מלא.
+
+כללים:
+- עברית בלבד, בכל מצב.
+- תגובות קצרות: 2-3 משפטים. שיחה קולית — לא מאמר.
+- אל תתן רשימות ארוכות. אל תשתמש בכוכביות או מיקוד.
+- אם שואלים מחוץ לתחום — החזר לפיתוח הסיפור.
+
+שמירת כרטיס סיפור:
+כשמתבקש לשמור, ספק JSON מדויק בין תגיות STORY_CARD בלבד, ללא תוספות:
+<STORY_CARD>
+{
+  "title": "כותרת הסיפור",
+  "logline": "משפט אחד שמתאר את הסיפור",
+  "genre": "ז'אנר",
+  "themes": ["תמה1", "תמה2"],
+  "protagonist": "תיאור הגיבור",
+  "conflict": "הקונפליקט המרכזי",
+  "world": "הסביבה והעולם",
+  "notes": "הערות חשובות מהשיחה"
+}
+</STORY_CARD>`;
+
+const SILENCE_DELAY = 1800; // ms silence before sending to Claude
+const MODEL = 'claude-sonnet-4-6';
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+
+let apiKey = '';
+let webhookUrl = '';
+let selectedVoice = null;
+let speechRate = 1.0;
+let conversationHistory = [];
+
+// State machine: IDLE | LISTENING | PROCESSING | SPEAKING
+let appState = 'IDLE';
+
+// Recognition
+let recognition = null;
+let recognitionRunning = false;
+let accumulatedText = '';
+let silenceTimer = null;
+
+// Story cards store (avoids passing JSON in onclick attrs)
+const pendingCards = {};
+let cardIdCounter = 0;
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+
+window.addEventListener('load', () => {
+  apiKey     = localStorage.getItem('sa_api_key')  || '';
+  webhookUrl = localStorage.getItem('sa_webhook')  || '';
+  speechRate = parseFloat(localStorage.getItem('sa_rate') || '1.0');
+
+  document.getElementById('api-key').value     = apiKey;
+  document.getElementById('webhook-url').value = webhookUrl;
+  document.getElementById('speech-rate').value = speechRate;
+  document.getElementById('rate-display').textContent = speechRate.toFixed(1) + '×';
+
+  document.getElementById('speech-rate').addEventListener('input', e => {
+    speechRate = parseFloat(e.target.value);
+    document.getElementById('rate-display').textContent = speechRate.toFixed(1) + '×';
+    localStorage.setItem('sa_rate', speechRate);
+  });
+
+  // Check browser compatibility
+  if (!hasSpeechRecognition()) {
+    document.getElementById('compat-warning').style.display = 'block';
+  }
+
+  // Load TTS voices
+  populateVoices();
+  if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = populateVoices;
+  }
+
+  // Populate voices once after short delay (Chrome needs this)
+  setTimeout(populateVoices, 500);
+});
+
+function hasSpeechRecognition() {
+  return ('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window);
+}
+
+function populateVoices() {
+  if (typeof speechSynthesis === 'undefined') return;
+  const voices = speechSynthesis.getVoices();
+  const sel = document.getElementById('voice-select');
+  const prevVal = sel.value;
+
+  sel.innerHTML = '<option value="">ברירת מחדל (עברית)</option>';
+
+  const hebrew = voices.filter(v => v.lang.startsWith('he'));
+  const others = voices.filter(v => !v.lang.startsWith('he'));
+
+  if (hebrew.length > 0) {
+    const grp = document.createElement('optgroup');
+    grp.label = 'קולות עבריים';
+    hebrew.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v.name;
+      o.textContent = v.name + (v.localService ? ' ★' : '');
+      grp.appendChild(o);
+    });
+    sel.appendChild(grp);
+  }
+
+  if (others.length > 0) {
+    const grp = document.createElement('optgroup');
+    grp.label = 'קולות נוספים';
+    others.slice(0, 8).forEach(v => {
+      const o = document.createElement('option');
+      o.value = v.name;
+      o.textContent = `${v.name} (${v.lang})`;
+      grp.appendChild(o);
+    });
+    sel.appendChild(grp);
+  }
+
+  if (prevVal) sel.value = prevVal;
+}
+
+/* ═══════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════ */
+
+function startSession() {
+  apiKey     = document.getElementById('api-key').value.trim();
+  webhookUrl = document.getElementById('webhook-url').value.trim();
+
+  if (!apiKey) { showToast('נא להזין מפתח Claude API', 'error'); return; }
+  if (!apiKey.startsWith('sk-ant-')) {
+    showToast('מפתח API נראה שגוי — בדוק שוב', 'error'); return;
+  }
+
+  localStorage.setItem('sa_api_key', apiKey);
+  if (webhookUrl) localStorage.setItem('sa_webhook', webhookUrl);
+
+  // Resolve voice selection
+  const voiceSel = document.getElementById('voice-select');
+  if (voiceSel.value) {
+    const voices = speechSynthesis.getVoices();
+    selectedVoice = voices.find(v => v.name === voiceSel.value) || null;
+  }
+
+  document.getElementById('settings-screen').classList.remove('active');
+  document.getElementById('chat-screen').classList.add('active');
+
+  // Welcome message on first session
+  if (conversationHistory.length === 0) {
+    const welcome = 'שלום. אני מוכן להאזין. ספר לי על הרעיון שאתה מפתח.';
+    addMessage('assistant', welcome);
+    conversationHistory.push({ role: 'assistant', content: welcome });
+    // Speak welcome (non-blocking)
+    speakText(welcome).then(() => {
+      setState('IDLE');
+    });
+    setState('SPEAKING');
+  }
+}
+
+function goToSettings() {
+  haltAll();
+  document.getElementById('chat-screen').classList.remove('active');
+  document.getElementById('settings-screen').classList.add('active');
+  populateVoices();
+}
+
+/* ═══════════════════════════════════════════════
+   STATE MACHINE
+═══════════════════════════════════════════════ */
+
+function setState(s) {
+  appState = s;
+  const dot   = document.getElementById('state-dot');
+  const label = document.getElementById('state-label');
+  const btn   = document.getElementById('mic-btn');
+  const icon  = document.getElementById('mic-icon');
+  const lbl   = document.getElementById('mic-label');
+
+  dot.className = 'state-dot';
+
+  switch (s) {
+    case 'IDLE':
+      label.textContent = 'מוכן';
+      btn.className = 'mic-btn idle';
+      btn.disabled = false;
+      icon.textContent = '🎙️';
+      lbl.textContent = 'התחל להאזין';
+      document.getElementById('live-area').classList.remove('visible');
+      break;
+
+    case 'LISTENING':
+      dot.classList.add('listening');
+      label.textContent = 'מאזין';
+      btn.className = 'mic-btn listening';
+      btn.disabled = false;
+      icon.textContent = '⏹';
+      lbl.textContent = 'עצור האזנה';
+      document.getElementById('live-area').classList.add('visible');
+      break;
+
+    case 'PROCESSING':
+      dot.classList.add('processing');
+      label.textContent = 'חושב';
+      btn.className = 'mic-btn idle';
+      btn.disabled = true;
+      icon.textContent = '⏳';
+      lbl.textContent = 'מעבד...';
+      break;
+
+    case 'SPEAKING':
+      dot.classList.add('speaking');
+      label.textContent = 'מדבר';
+      btn.className = 'mic-btn idle';
+      btn.disabled = true;
+      icon.textContent = '🔊';
+      lbl.textContent = 'מדבר...';
+      document.getElementById('live-area').classList.remove('visible');
+      break;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   SPEECH RECOGNITION
+═══════════════════════════════════════════════ */
+
+function toggleListening() {
+  if (appState === 'LISTENING') {
+    stopRecognition(true); // user-initiated stop
+  } else if (appState === 'IDLE') {
+    startRecognition();
+  }
+}
+
+function startRecognition() {
+  if (!hasSpeechRecognition()) {
+    showToast('זיהוי קול אינו נתמך בדפדפן זה', 'error');
+    return;
+  }
+  if (recognitionRunning) return;
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'he-IL';
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    recognitionRunning = true;
+    accumulatedText = '';
+    document.getElementById('live-text').innerHTML = '';
+    setState('LISTENING');
+  };
+
+  recognition.onresult = handleRecognitionResult;
+
+  recognition.onerror = (e) => {
+    if (e.error === 'no-speech') return;  // silence — ignore
+    if (e.error === 'aborted')  return;  // we stopped it — ignore
+    if (e.error === 'not-allowed') {
+      showToast('נא לאשר גישה למיקרופון בדפדפן', 'error');
+      recognitionRunning = false;
+      setState('IDLE');
+      return;
+    }
+    console.warn('SpeechRecognition error:', e.error);
+    recognitionRunning = false;
+  };
+
+  recognition.onend = () => {
+    recognitionRunning = false;
+    // Auto-restart if still supposed to be listening
+    if (appState === 'LISTENING') {
+      setTimeout(() => {
+        if (appState === 'LISTENING' && !recognitionRunning) {
+          try {
+            recognition.start();
+            recognitionRunning = true;
+          } catch (_) {}
+        }
+      }, 200);
+    }
+  };
+
+  try {
+    recognition.start();
+  } catch (e) {
+    showToast('שגיאה בהפעלת המיקרופון', 'error');
+    recognitionRunning = false;
+  }
+}
+
+function handleRecognitionResult(e) {
+  clearTimeout(silenceTimer);
+
+  let finalChunk = '';
+  let interimChunk = '';
+
+  for (let i = e.resultIndex; i < e.results.length; i++) {
+    const t = e.results[i][0].transcript;
+    if (e.results[i].isFinal) finalChunk += t;
+    else interimChunk += t;
+  }
+
+  if (finalChunk) accumulatedText += finalChunk + ' ';
+
+  document.getElementById('live-text').innerHTML =
+    `<span class="final">${escHtml(accumulatedText)}</span>` +
+    `<span style="opacity:0.55">${escHtml(interimChunk)}</span>`;
+
+  // Silence timeout — process after pause
+  if (accumulatedText.trim()) {
+    silenceTimer = setTimeout(() => {
+      const text = accumulatedText.trim();
+      accumulatedText = '';
+      if (text) processUserInput(text);
+    }, SILENCE_DELAY);
+  }
+}
+
+function stopRecognition(userInitiated = false) {
+  clearTimeout(silenceTimer);
+  recognitionRunning = false;
+  accumulatedText = '';
+  document.getElementById('live-text').innerHTML = '';
+
+  if (recognition) {
+    try { recognition.stop(); } catch (_) {}
+  }
+
+  if (userInitiated) setState('IDLE');
+}
+
+function pauseRecognitionForProcessing() {
+  clearTimeout(silenceTimer);
+  recognitionRunning = false;
+  if (recognition) {
+    try { recognition.abort(); } catch (_) {}
+  }
+  accumulatedText = '';
+  document.getElementById('live-text').innerHTML = '';
+}
+
+function resumeListening() {
+  if (appState !== 'LISTENING') {
+    setState('LISTENING');
+  }
+  // Restart recognition
+  if (!recognitionRunning) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+
+    recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'he-IL';
+
+    recognition.onresult = handleRecognitionResult;
+    recognition.onerror = (e) => {
+      if (e.error === 'no-speech' || e.error === 'aborted') return;
+      recognitionRunning = false;
+    };
+    recognition.onend = () => {
+      recognitionRunning = false;
+      if (appState === 'LISTENING') {
+        setTimeout(() => {
+          if (appState === 'LISTENING' && !recognitionRunning) {
+            try { recognition.start(); recognitionRunning = true; } catch (_) {}
+          }
+        }, 200);
+      }
+    };
+
+    try {
+      recognition.start();
+      recognitionRunning = true;
+      document.getElementById('live-area').classList.add('visible');
+    } catch (_) {}
+  }
+}
+
+function haltAll() {
+  stopRecognition(true);
+  speechSynthesis.cancel();
+  setState('IDLE');
+}
+
+/* ═══════════════════════════════════════════════
+   CLAUDE API
+═══════════════════════════════════════════════ */
+
+async function processUserInput(text) {
+  if (appState !== 'LISTENING') return;
+
+  pauseRecognitionForProcessing();
+  setState('PROCESSING');
+
+  addMessage('user', text);
+  conversationHistory.push({ role: 'user', content: text });
+
+  const typingEl = addTypingIndicator();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-allow-browser': 'true',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1024,
+        system: SYSTEM_PROMPT,
+        messages: conversationHistory,
+      }),
+    });
+
+    if (!res.ok) {
+      let errMsg = `HTTP ${res.status}`;
+      try { const j = await res.json(); errMsg = j.error?.message || errMsg; } catch (_) {}
+      throw new Error(errMsg);
+    }
+
+    const data = await res.json();
+    const fullText = data.content[0].text.trim();
+
+    conversationHistory.push({ role: 'assistant', content: fullText });
+
+    removeEl(typingEl);
+
+    // Extract story card JSON if present
+    const cardMatch = fullText.match(/<STORY_CARD>([\s\S]*?)<\/STORY_CARD>/);
+    let displayText = cardMatch
+      ? fullText.replace(/<STORY_CARD>[\s\S]*?<\/STORY_CARD>/, '').trim()
+      : fullText;
+
+    if (displayText) {
+      addMessage('assistant', displayText);
+    }
+
+    if (cardMatch) {
+      try {
+        const cardData = JSON.parse(cardMatch[1].trim());
+        showStoryCardWidget(cardData);
+      } catch (e) {
+        console.error('Story card JSON parse error:', e);
+        addMessage('system-msg', '(שגיאה בפענוח כרטיס הסיפור)');
+      }
+    }
+
+    // Speak response then resume listening
+    setState('SPEAKING');
+    await speakText(displayText || '');
+    setState('LISTENING');
+    resumeListening();
+
+  } catch (err) {
+    removeEl(typingEl);
+    console.error('Claude API error:', err);
+    addMessage('system-msg', `שגיאה: ${err.message}`);
+    showToast('שגיאה בתקשורת עם Claude', 'error');
+    setState('LISTENING');
+    resumeListening();
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   TTS
+═══════════════════════════════════════════════ */
+
+function speakText(text) {
+  return new Promise(resolve => {
+    if (typeof speechSynthesis === 'undefined' || !text.trim()) {
+      resolve(); return;
+    }
+
+    speechSynthesis.cancel();
+
+    const clean = text
+      .replace(/[*_~`#]/g, '')
+      .replace(/\n+/g, '. ')
+      .trim();
+
+    if (!clean) { resolve(); return; }
+
+    const utt = new SpeechSynthesisUtterance(clean);
+    utt.lang    = 'he-IL';
+    utt.rate    = speechRate;
+    utt.pitch   = 1.0;
+    utt.volume  = 1.0;
+
+    if (selectedVoice) {
+      utt.voice = selectedVoice;
+    } else {
+      const voices = speechSynthesis.getVoices();
+      const heVoice = voices.find(v => v.lang.startsWith('he') && v.localService)
+                   || voices.find(v => v.lang.startsWith('he'));
+      if (heVoice) utt.voice = heVoice;
+    }
+
+    let done = false;
+    const finish = () => { if (!done) { done = true; resolve(); } };
+
+    utt.onend   = finish;
+    utt.onerror = finish;
+
+    // Failsafe: max 20s per ~100 chars (generous)
+    const timeout = setTimeout(finish, Math.max(clean.length * 200, 6000));
+    utt.onend = () => { clearTimeout(timeout); finish(); };
+
+    // iOS needs a small delay after cancel()
+    setTimeout(() => {
+      if (!done) speechSynthesis.speak(utt);
+    }, 80);
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   STORY CARD & NOTION
+═══════════════════════════════════════════════ */
+
+async function saveStoryCard() {
+  if (conversationHistory.length < 2) {
+    showToast('נדרשת שיחה לפני שמירת כרטיס', 'error');
+    return;
+  }
+
+  const wasListening = appState === 'LISTENING';
+  if (wasListening) pauseRecognitionForProcessing();
+  setState('PROCESSING');
+
+  const req = 'בנה כרטיס סיפור מסכם מהשיחה שלנו עד כה.';
+  conversationHistory.push({ role: 'user', content: req });
+
+  const typingEl = addTypingIndicator();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-allow-browser': 'true',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1024,
+        system: SYSTEM_PROMPT,
+        messages: conversationHistory,
+      }),
+    });
+
+    const data = await res.json();
+    const fullText = data.content[0].text.trim();
+
+    conversationHistory.push({ role: 'assistant', content: fullText });
+    removeEl(typingEl);
+
+    const cardMatch = fullText.match(/<STORY_CARD>([\s\S]*?)<\/STORY_CARD>/);
+
+    if (cardMatch) {
+      const displayText = fullText.replace(/<STORY_CARD>[\s\S]*?<\/STORY_CARD>/, '').trim();
+      if (displayText) addMessage('assistant', displayText);
+
+      try {
+        showStoryCardWidget(JSON.parse(cardMatch[1].trim()));
+      } catch (e) {
+        addMessage('assistant', fullText);
+        showToast('שגיאה בפענוח כרטיס הסיפור', 'error');
+      }
+    } else {
+      addMessage('assistant', fullText);
+      showToast('הסוכן לא יצר כרטיס — נסה שוב', 'error');
+    }
+
+  } catch (err) {
+    removeEl(typingEl);
+    showToast(`שגיאה: ${err.message}`, 'error');
+  }
+
+  if (wasListening) {
+    setState('LISTENING');
+    resumeListening();
+  } else {
+    setState('IDLE');
+  }
+}
+
+function showStoryCardWidget(cardData) {
+  const id = ++cardIdCounter;
+  pendingCards[id] = cardData;
+
+  const widget = document.createElement('div');
+  widget.className = 'story-card-widget';
+  widget.id = `card-widget-${id}`;
+
+  const themes = Array.isArray(cardData.themes) ? cardData.themes.join(', ') : (cardData.themes || '');
+
+  widget.innerHTML = `
+    <div class="story-card-title">📚 כרטיס סיפור מוכן</div>
+    <div class="story-card-detail">
+      <strong>${escHtml(cardData.title || 'ללא כותרת')}</strong><br>
+      ${cardData.logline ? escHtml(cardData.logline) : ''}
+      ${cardData.genre ? `<br><small style="color:var(--text-dim)">${escHtml(cardData.genre)}</small>` : ''}
+      ${themes ? `<br><small style="color:var(--text-dim)">נושאים: ${escHtml(themes)}</small>` : ''}
+    </div>
+    <div class="story-card-actions">
+      <button class="btn btn-success btn-sm" style="flex:1" onclick="executeNotionSave(${id})">
+        💾 שמור ב-Notion
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="dismissCard(${id})">
+        ✕
+      </button>
+    </div>
+  `;
+
+  document.getElementById('messages').appendChild(widget);
+  scrollBottom();
+}
+
+async function executeNotionSave(id) {
+  const cardData = pendingCards[id];
+  if (!cardData) return;
+
+  if (!webhookUrl) {
+    showToast('הגדר Webhook URL בהגדרות תחילה', 'error');
+    return;
+  }
+
+  const widget = document.getElementById(`card-widget-${id}`);
+  const actionsEl = widget?.querySelector('.story-card-actions');
+  if (actionsEl) actionsEl.innerHTML = '<span style="color:var(--text-dim);font-size:13px">⏳ שומר ב-Notion...</span>';
+
+  try {
+    const payload = {
+      ...cardData,
+      saved_at: new Date().toISOString(),
+      source: 'סוכן הסיפורים',
+    };
+
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    if (widget) {
+      widget.style.borderColor = 'var(--success)';
+      if (actionsEl) actionsEl.innerHTML =
+        '<span style="color:var(--success);font-size:14px;font-weight:700">✅ נשמר בהצלחה ב-Notion!</span>';
+    }
+    showToast('הסיפור נשמר ב-Notion!', 'success');
+    delete pendingCards[id];
+
+  } catch (err) {
+    if (actionsEl) actionsEl.innerHTML = `
+      <button class="btn btn-success btn-sm" style="flex:1" onclick="executeNotionSave(${id})">🔄 נסה שוב</button>
+      <button class="btn btn-secondary btn-sm" onclick="dismissCard(${id})">✕</button>
+    `;
+    showToast(`שגיאת שמירה: ${err.message}`, 'error');
+  }
+}
+
+function dismissCard(id) {
+  delete pendingCards[id];
+  const el = document.getElementById(`card-widget-${id}`);
+  if (el) el.remove();
+}
+
+/* ═══════════════════════════════════════════════
+   UI HELPERS
+═══════════════════════════════════════════════ */
+
+function addMessage(role, text) {
+  const el = document.createElement('div');
+  el.className = `msg ${role}`;
+  el.textContent = text;
+  document.getElementById('messages').appendChild(el);
+  scrollBottom();
+  return el;
+}
+
+function addTypingIndicator() {
+  const el = document.createElement('div');
+  el.className = 'msg assistant';
+  el.innerHTML =
+    '<div class="typing-indicator">' +
+    '<div class="typing-dot"></div>' +
+    '<div class="typing-dot"></div>' +
+    '<div class="typing-dot"></div>' +
+    '</div>';
+  document.getElementById('messages').appendChild(el);
+  scrollBottom();
+  return el;
+}
+
+function removeEl(el) {
+  if (el && el.parentNode) el.parentNode.removeChild(el);
+}
+
+function scrollBottom() {
+  const c = document.getElementById('messages');
+  requestAnimationFrame(() => { c.scrollTop = c.scrollHeight; });
+}
+
+function clearConversation() {
+  if (!confirm('למחוק את כל השיחה ולהתחיל מחדש?')) return;
+  haltAll();
+  conversationHistory = [];
+  document.getElementById('messages').innerHTML = '';
+  const welcome = 'שיחה חדשה. מה הרעיון שאתה מביא היום?';
+  addMessage('assistant', welcome);
+  conversationHistory.push({ role: 'assistant', content: welcome });
+}
+
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.classList.remove('show'); }, 3200);
+}
+
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ═══════════════════════════════════════════════
+   WAKE LOCK (prevent screen sleep during session)
+═══════════════════════════════════════════════ */
+let wakeLock = null;
+async function acquireWakeLock() {
+  try {
+    if ('wakeLock' in navigator && document.visibilityState === 'visible') {
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch (_) {}
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && appState === 'LISTENING') {
+    acquireWakeLock();
+  }
+});
+
+window.addEventListener('beforeunload', () => {
+  if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+});
+</script>
+</body>
+</html>
